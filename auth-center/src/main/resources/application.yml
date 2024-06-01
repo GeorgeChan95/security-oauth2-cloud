@@ -12,3 +12,5 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
     cache: false
+  main:
+    allow-bean-definition-overriding: true

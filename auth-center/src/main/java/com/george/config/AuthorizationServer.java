@@ -6,17 +6,25 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
+import org.springframework.security.oauth2.provider.client.JdbcClientDetailsService;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.code.InMemoryAuthorizationCodeServices;
+import org.springframework.security.oauth2.provider.code.JdbcAuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
+import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
 import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
+
+import javax.sql.DataSource;
+import java.util.Collections;
 
 /**
  * 解析内容参考：https://blog.kdyzm.cn/post/24
@@ -35,12 +43,31 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
     @Autowired
     private AuthorizationCodeServices authorizationCodeServices;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     /**
      * 认证管理器，当你选择了资源所有者密码（password）授权类型的时候，请设置这个属性注入一个 AuthenticationManager 对象。
      * 密码验证流程：https://blog.csdn.net/chengqiuming/article/details/103282586
      */
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    /**
+     * token jwt转换工具
+     * 用于将OAuth2访问令牌转换为JWT令牌，并进行签名和验证。
+     */
+    @Autowired
+    private JwtAccessTokenConverter jwtAccessTokenConverter;
+
+    /**
+     * 密码编辑器
+     * @return
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     /**
      * 配置授权服务器（Authorization Server）的Token服务（Token Services）
@@ -60,12 +87,20 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
         // 设置刷新令牌的有效期为259200秒（3天）。
         // 刷新令牌用于获取新的访问令牌，有效期通常比访问令牌长，以确保用户在一段时间内无需重新登录即可获取新的访问令牌
         services.setRefreshTokenValiditySeconds(259200);
+
+        // 设置令牌增强器链, 用于将多个TokenEnhancer组合在一起。
+        TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
+        tokenEnhancerChain.setTokenEnhancers(Collections.singletonList(jwtAccessTokenConverter));
+        // 将增强器链注入到DefaultTokenServices中，使其在生成令牌时使用JWT转换器。
+        services.setTokenEnhancer(tokenEnhancerChain);
         return services;
     }
 
     @Bean
-    public AuthorizationCodeServices authorizationCodeServices(){
-        return new InMemoryAuthorizationCodeServices();
+    public ClientDetailsService clientDetailsService(DataSource dataSource) {
+        JdbcClientDetailsService clientDetailsService = new JdbcClientDetailsService(dataSource);
+        clientDetailsService.setPasswordEncoder(passwordEncoder);
+        return clientDetailsService;
     }
 
     /**
@@ -83,14 +118,16 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
      */
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.inMemory()
-                .withClient("c1")
-                .secret(new BCryptPasswordEncoder().encode("secret"))//$2a$10$0uhIO.ADUFv7OQ/kuwsC1.o3JYvnevt5y3qX/ji0AUXs4KYGio3q6
-                .resourceIds("r1")
-                .authorizedGrantTypes("authorization_code", "password", "client_credentials", "implicit", "refresh_token")
-                .scopes("all")
-                .autoApprove(false)
-                .redirectUris("https://www.baidu.com");
+        clients.withClientDetails(clientDetailsService);
+
+//        clients.inMemory()
+//                .withClient("c1")
+//                .secret(new BCryptPasswordEncoder().encode("secret"))//$2a$10$0uhIO.ADUFv7OQ/kuwsC1.o3JYvnevt5y3qX/ji0AUXs4KYGio3q6
+//                .resourceIds("r1")
+//                .authorizedGrantTypes("authorization_code", "password", "client_credentials", "implicit", "refresh_token")
+//                .scopes("all")
+//                .autoApprove(false)
+//                .redirectUris("https://www.baidu.com");
     }
 
     /**
@@ -141,6 +178,11 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
                 .tokenKeyAccess("permitAll()") // 指定了访问令牌密钥的端点的安全约束。permitAll() 表示允许所有用户（包括未认证的用户）访问此端点，而无需进行身份验证。, 具体在：org.springframework.security.oauth2.provider.endpoint.TokenEndpoint
                 .checkTokenAccess("permitAll()") // 校验token是否有效的断点安全约束。具体定义在，org.springframework.security.oauth2.provider.endpoint.CheckTokenEndpoint
                 .allowFormAuthenticationForClients(); // 这一行允许客户端使用表单身份验证来进行认证。在某些情况下，客户端可能需要使用表单身份验证（例如，使用用户名和密码）向授权服务器进行身份验证，以获取访问令牌或刷新令牌
+    }
+
+    @Bean
+    public AuthorizationCodeServices authorizationCodeServices(DataSource dataSource){
+        return new JdbcAuthorizationCodeServices(dataSource);
     }
 
 
