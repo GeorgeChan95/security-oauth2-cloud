@@ -4,7 +4,7 @@ spring:
   application:
     name: auth-center
   datasource:
-    url: jdbc:mysql://192.168.6.203:3306/security?useSSL=false&userUnicode=true&characterEncoding=utf-8&serverTimezone=UTC
+    url: jdbc:mysql://192.168.204.151:3306/security?useSSL=false&userUnicode=true&characterEncoding=utf-8&serverTimezone=UTC
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver
