@@ -1,0 +1,25 @@
+server:
+  port: 8761
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: resource_server
+          uri: "lb://resource-server"
+          predicates:
+            - Path=/r**
+#        - id: baidu_route
+#          uri: https://www.baidu.com
+#          predicates:
+#            - Path=/**
+  application:
+    name: gateway-server
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:8765/eureka
+  instance:
+    hostname: ${spring.cloud.client.ip-address}
+    prefer-ip-address: true
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}
