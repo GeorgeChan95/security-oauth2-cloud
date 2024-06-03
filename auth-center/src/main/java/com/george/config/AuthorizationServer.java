@@ -1,5 +1,6 @@
 package com.george.config;
 
+import com.george.enhancer.CustomTokenEnhancer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,7 @@ import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -61,6 +63,12 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
     private JwtAccessTokenConverter jwtAccessTokenConverter;
 
     /**
+     * 注入自定义的Token增强器
+     */
+    @Autowired
+    private CustomTokenEnhancer customTokenEnhancer;
+
+    /**
      * 密码编辑器
      * @return
      */
@@ -90,7 +98,8 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
 
         // 设置令牌增强器链, 用于将多个TokenEnhancer组合在一起。
         TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
-        tokenEnhancerChain.setTokenEnhancers(Collections.singletonList(jwtAccessTokenConverter));
+        // 将自定义的Token增强器添加到Token增强器链中
+        tokenEnhancerChain.setTokenEnhancers(Arrays.asList(customTokenEnhancer, jwtAccessTokenConverter));
         // 将增强器链注入到DefaultTokenServices中，使其在生成令牌时使用JWT转换器。
         services.setTokenEnhancer(tokenEnhancerChain);
         return services;

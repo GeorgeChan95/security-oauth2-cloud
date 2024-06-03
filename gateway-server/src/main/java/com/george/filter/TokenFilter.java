@@ -1,5 +1,6 @@
 package com.george.filter;
 
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -14,6 +15,8 @@ import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author George Chan
@@ -51,7 +54,8 @@ public class TokenFilter implements GlobalFilter, Ordered {
         }
         //将PayLoad数据放到header
         ServerHttpRequest.Builder builder = exchange.getRequest().mutate();
-        builder.header("token-info", payLoad).build();
+        // 将token进行base64编码后，放入请求头中，避免了中文乱码
+        builder.header("token-info", Base64.encode(payLoad.getBytes(StandardCharsets.UTF_8))).build();
         //继续执行
         return chain.filter(exchange.mutate().request(builder.build()).build());
     }

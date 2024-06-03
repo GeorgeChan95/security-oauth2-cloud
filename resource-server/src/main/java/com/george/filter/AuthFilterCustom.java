@@ -2,6 +2,7 @@ package com.george.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.george.models.JwtTokenInfo;
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -36,12 +38,15 @@ public class AuthFilterCustom extends OncePerRequestFilter { // 继承了OncePer
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String tokenInfo=request.getHeader("token-info");
-        if(StringUtils.isEmpty(tokenInfo)){
+        String base64Token=request.getHeader("token-info");
+        if(StringUtils.isEmpty(base64Token)){
             log.info("未找到token信息");
             filterChain.doFilter(request,response);
             return;
         }
+        // 将token进行base64解码还原
+        byte[] decode = Base64.decode(base64Token);
+        String tokenInfo = new String(decode, StandardCharsets.UTF_8);
         JwtTokenInfo jwtTokenInfo = objectMapper.readValue(tokenInfo, JwtTokenInfo.class);
         log.info("tokenInfo={}",objectMapper.writeValueAsString(jwtTokenInfo));
         // 获取用户角色拥有的权限的范围
@@ -50,7 +55,7 @@ public class AuthFilterCustom extends OncePerRequestFilter { // 继承了OncePer
         authorities.toArray(authoritiesArr);
         // 将用户信息和权限填充 到用户身份token对象中(设置了用户名、密码null、权限信息)
         UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(jwtTokenInfo.getUser_name(), null, AuthorityUtils.createAuthorityList(authoritiesArr));
+                new UsernamePasswordAuthenticationToken(jwtTokenInfo.getUser_info(), null, AuthorityUtils.createAuthorityList(authoritiesArr));
         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         //将authenticationToken填充到安全上下文
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);

@@ -1,5 +1,6 @@
 package com.george.models;
 
+import com.george.dto.UserDetailsExpand;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,5 +25,6 @@ public class JwtTokenInfo {
     private List<String> authorities;
     private String jti;
     private String client_id;
-
+    //用户信息扩展
+    private UserDetailsExpand user_info;
 }

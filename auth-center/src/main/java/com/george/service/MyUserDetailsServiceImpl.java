@@ -1,11 +1,12 @@
 package com.george.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.george.dto.UserDetailsExpand;
 import com.george.entity.TUser;
 import com.george.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -43,9 +44,12 @@ public class MyUserDetailsServiceImpl implements UserDetailsService {
             array = new String[allPermissions.size()];
             allPermissions.toArray(array);
         }
-        return User
-                .withUsername(tUser.getUsername())
-                .password(tUser.getPassword())
-                .authorities(array).build();
+
+        // 自定义token信息扩张
+        UserDetailsExpand userDetailsExpand = new UserDetailsExpand(tUser.getUsername(), tUser.getPassword(), AuthorityUtils.createAuthorityList(array));
+        userDetailsExpand.setId(tUser.getId());
+        userDetailsExpand.setMobile(tUser.getMobile());
+        userDetailsExpand.setFullname(tUser.getFullname());
+        return userDetailsExpand;
     }
 }
