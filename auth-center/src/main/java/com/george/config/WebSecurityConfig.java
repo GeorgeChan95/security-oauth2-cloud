@@ -62,8 +62,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().authenticated() // 其他所有请求都需要进行身份验证
                 .and()
                 .formLogin()
-                .loginPage("/login.html")
-                .loginProcessingUrl("/login") // 指定登录请求URL, 这个请求不必真实存在，浏览器访问，状态是302
-                .failureHandler(myAuthenticationFailureHandler);
+                .disable(); // 前后端分离，禁止表单登录
+//                .loginPage("/login.html")
+//                .loginProcessingUrl("/login") // 指定登录请求URL, 这个请求不必真实存在，浏览器访问，状态是302
+//                .failureHandler(myAuthenticationFailureHandler);
     }
 }

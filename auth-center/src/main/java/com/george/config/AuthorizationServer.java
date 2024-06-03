@@ -96,6 +96,13 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
         // 刷新令牌用于获取新的访问令牌，有效期通常比访问令牌长，以确保用户在一段时间内无需重新登录即可获取新的访问令牌
         services.setRefreshTokenValiditySeconds(259200);
 
+        /**
+         * 无效的时间配置，token的有效期优先选择数据库中客户端的配置，如需修改，修改表oauth_client_details中的配置
+         * @see DefaultTokenServices#getAccessTokenValiditySeconds(org.springframework.security.oauth2.provider.OAuth2Request)
+         */
+//        services.setAccessTokenValiditySeconds(10);//有效期10秒
+//        services.setRefreshTokenValiditySeconds(30);//有效期30秒
+
         // 设置令牌增强器链, 用于将多个TokenEnhancer组合在一起。
         TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
         // 将自定义的Token增强器添加到Token增强器链中

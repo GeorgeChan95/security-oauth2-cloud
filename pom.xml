@@ -14,6 +14,7 @@
         <module>register-server</module>
         <module>gateway-server</module>
         <module>common</module>
+        <module>business-server</module>
     </modules>
 
     <properties>

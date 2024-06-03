@@ -18,13 +18,13 @@ public class OrderController {
 
     @GetMapping("/r1")
     @PreAuthorize("hasAnyAuthority('p1')")
-    public String r1(){
+    public UserDetailsExpand r1(){
 //        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 //        UserDetailsExpand userDetails = (UserDetailsExpand) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         // 使用 TransmittableThreadLocal 安全的获取用户token信息
         UserDetailsExpand userDetails = AuthContextHolder.getInstance().getContext();
         log.info("当前接口操作用户，用户名: {}", userDetails.getUsername());
-        return "访问资源r1";
+        return userDetails;
     }
 }
